@@ -5,3 +5,4 @@ WORKDIR /code
 RUN pip install -r requirements.txt
 
 
+CMD ["make","startdev"]
