@@ -1,5 +1,4 @@
 from app import create_app
-
 app = create_app('dm-pricing-baseprice-msrp')
 
 if __name__ == "__main__":
