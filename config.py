@@ -12,9 +12,15 @@ defaults = {
             },
             "endpoint_url": "http://localstack:4576"
         }
+    },
+    'databases': {
+        'mongo-default': {
+            'alias': 'default',
+            'db': 'pricing',
+            'host': 'mongodb'
+        }
     }
 }
-
 
 config = defaults
 
@@ -23,3 +29,6 @@ def isDev():
 
 def roleIsConsumer():
     return os.getenv('ROLE_CONSUMER', 'false').lower() != 'false'
+
+def getDbConfig():
+    return config['databases']

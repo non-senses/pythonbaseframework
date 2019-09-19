@@ -9,6 +9,7 @@ services:
     - .:/code
     depends_on:
     - localstack
+    - mongodb
     ports:
     - 5000:5000
 
@@ -20,6 +21,7 @@ services:
     - .:/code
     depends_on:
     - localstack
+    - mongodb
     environment:
     - ROLE_CONSUMER=true
 
@@ -40,3 +42,8 @@ services:
     volumes:
       - "/tmp/:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
+
+  mongodb:
+    image: mongo
+    volumes:
+      - ./volumes/mongodb:/data/

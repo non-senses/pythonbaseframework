@@ -30,7 +30,6 @@ def post_ok():
 def post_failed():
     return (queue_service.enqueue('OneQueueName', {"failed": '{}'.format(datetime.now())}))
 
-
 @useFunctionToConsumeQueue('OneQueueName')
 def consumer(message) -> None:
     sys.stdout.write("Controller::consumer, try to consume:")
@@ -61,6 +60,3 @@ def consume_queues():
         print("Route /consume_queues consuming " + QueueName)
 
     return jsonify(words)
-
-
-
