@@ -4,6 +4,7 @@ from config import config, isDev, roleIsConsumer
 from time import sleep
 from datetime import datetime
 import http.client
+import sys
 
 conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
 
@@ -39,51 +40,53 @@ class QueueService:
 
     def enqueue(self, QueueName, message):
         self.ensure_queue_exists(QueueName)
-
         queue_url = self.get_queue_url(QueueName)
         return self.awsClient.send_message(
             QueueUrl=queue_url,
-            MessageBody=message
+            MessageBody=json.dumps(message)
         )
+
 
     def get_queue_url(self, QueueName):
         response = self.awsClient.get_queue_url(QueueName=QueueName);
         return response['QueueUrl']
 
+
     def poll_once(self, QueueName, callback):
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
         messages = queue.receive_messages(WaitTimeSeconds=5)
-
         print(messages)
-
         for index, message in enumerate(messages):
             print("received ", index, message)
             try:
+                # Start tracking time ...
                 self.try_to_consume_message(message, callback)
                 self.flag_message_success(message)
-            except:
-                self.flag_message_failure(message)
+                # report execution time success
+            except Exception as exception:
+                # report exeuction time failed
+                self.flag_message_failure(message, exception)
+
 
     def try_to_consume_message(self, message, callback):
-        conn.request("POST", "/", json.dumps(message.body), {'Content-Type': 'application/json'})
         callback(message.body)
+
 
     def flag_message_success(self, message):
         message.delete()
         print("REMOVING MESSAGE")
         return True
 
-    def flag_message_failure(self, message):
-        print("For SQS do Nothing ...", handler)
+    def flag_message_failure(self, message, exception):
+        sys.stdout.write("flag_message_failure")
+        print("Failure processing the message. For SQS do Nothing. Maybe send metrics?")
+        print(repr(exception))
         return True
 
 def useFunctionToConsumeQueue(QueueName):
     queue_service = QueueService()
     def wrapper(function_to_decorate):
         instances[QueueName] = function_to_decorate
-        print("Something is happening before the function is called.")
-        ## queue_service.consume(QueueName, function_to_decorate)
-        ## function_to_decorate("this is the message")
     return wrapper
 
 def get_queue_names():
