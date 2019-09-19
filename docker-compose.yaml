@@ -1,7 +1,7 @@
 version: "3.4"
 
 services:
-  pythonpoc:
+  pythonpoc-http:
     image: pythonpoc
     build:
       context: .
@@ -11,6 +11,19 @@ services:
     - localstack
     ports:
     - 5000:5000
+
+  pythonpoc-consumers:
+    image: pythonpoc
+    build:
+      context: .
+    volumes:
+    - .:/code
+    depends_on:
+    - localstack
+    environment:
+    - ROLE_CONSUMER=true
+
+
 
   localstack:
     image: localstack/localstack

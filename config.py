@@ -15,7 +15,11 @@ defaults = {
     }
 }
 
+
 config = defaults
 
 def isDev():
     return config['env'] == 'development'
+
+def roleIsConsumer():
+    return os.getenv('ROLE_CONSUMER', 'false').lower() != 'false'

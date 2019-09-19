@@ -1,5 +1,5 @@
 from flask import request, Flask, Blueprint
-from app.modules.infrastructure.queue_service import QueueService, QueueServiceDecorators
+from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue
 import sys
 
 routes = Blueprint('sqspoc', __name__)
@@ -15,12 +15,17 @@ def root():
 def getAll():
     return queue_service.list_queues()
 
-
 @routes.route('/post')
 def post():
     return (queue_service.enqueue('OneQueueName', "the message to queue"))
 
-@QueueServiceDecorators.useFunctionToConsumeQueue('MyDefinedQueueUrl')
+@useFunctionToConsumeQueue('OneQueueName')
 def consumer(message):
     sys.stdout.write("message process " + message)
     
+def doSomething():
+    sys.stdout.write("doing something")
+    print("doing something")
+
+
+doSomething()
