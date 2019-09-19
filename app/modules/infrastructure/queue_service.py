@@ -4,10 +4,10 @@ from config import config, isDev, roleIsConsumer
 from time import sleep
 from datetime import datetime
 import http.client
-conn = http.client.HTTPSConnection('envtcbvw9ebxs.x.pipedream.net')
 
+conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
 
-instances = {}
+instances = dict()
 
 class QueueService:
     def __init__(self):
@@ -54,6 +54,8 @@ class QueueService:
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
         messages = queue.receive_messages(WaitTimeSeconds=5)
 
+        print(messages)
+
         for index, message in enumerate(messages):
             print("received ", index, message)
             try:
@@ -63,20 +65,17 @@ class QueueService:
                 self.flag_message_failure(message)
 
     def try_to_consume_message(self, message, callback):
-        handler = message['GetHandler']
-        rawBody = message['Body']
-        callback(rawBody)
+        conn.request("POST", "/", json.dumps(message.body), {'Content-Type': 'application/json'})
+        callback(message.body)
 
     def flag_message_success(self, message):
-        handler = message['GetHandler']
-        print("REMOVING MESSAGE", handler)
+        message.delete()
+        print("REMOVING MESSAGE")
         return True
 
     def flag_message_failure(self, message):
-        handler = message['GetHandler']
-        print("FLAG AS FAILED MESSAGE", handler)
+        print("For SQS do Nothing ...", handler)
         return True
-
 
 def useFunctionToConsumeQueue(QueueName):
     queue_service = QueueService()
@@ -87,22 +86,8 @@ def useFunctionToConsumeQueue(QueueName):
         ## function_to_decorate("this is the message")
     return wrapper
 
-def debug(message):
-    conn.request("POST", "/", json.dumps(message), {'Content-Type': 'application/json'})
+def get_queue_names():
+    return json.dumps(list(instances.keys()))
 
-def run():
-    print(roleIsConsumer())
-    if not roleIsConsumer():
-        debug("I am not a consumer")
-        print("I am not a consumer", roleIsConsumer())
-        return False
-        
-    debug("I am indeed a consumer")
-    print(datetime.now(), "I am indeed a Consumer", roleIsConsumer(), instances)
-    sleep(1)
-    run()
-
-run()
-
-
-
+def get_queues():
+    return instances    
