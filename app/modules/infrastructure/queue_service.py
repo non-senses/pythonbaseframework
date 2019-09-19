@@ -51,11 +51,13 @@ class QueueService:
         response = self.awsClient.get_queue_url(QueueName=QueueName);
         return response['QueueUrl']
 
-
     def poll_once(self, QueueName, callback):
+        print("About to poll...")
+        sys.stdout.write("About to poll...  STD OUT\n")
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
-        messages = queue.receive_messages(WaitTimeSeconds=5)
-        print(messages)
+        messages = queue.receive_messages(WaitTimeSeconds=2)
+        print("Polled messages")
+        sys.stdout.write("Polled...  STD OUT\n")
         for index, message in enumerate(messages):
             print("received ", index, message)
             try:
@@ -67,10 +69,8 @@ class QueueService:
                 # report exeuction time failed
                 self.flag_message_failure(message, exception)
 
-
     def try_to_consume_message(self, message, callback):
         callback(message.body)
-
 
     def flag_message_success(self, message):
         message.delete()
@@ -85,6 +85,7 @@ class QueueService:
 
 def useFunctionToConsumeQueue(QueueName):
     queue_service = QueueService()
+    queue_service.ensure_queue_exists(QueueName)
     def wrapper(function_to_decorate):
         instances[QueueName] = function_to_decorate
     return wrapper

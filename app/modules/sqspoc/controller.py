@@ -1,16 +1,18 @@
-from flask import request, Flask, Blueprint
+from flask import request, Flask, Blueprint, jsonify
+from werkzeug.exceptions import NotFound
 from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue, get_queue_names, get_queues
 from datetime import datetime
 import sys
 import json
-
 import http.client
-conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
-
 
 routes = Blueprint('sqspoc', __name__)
 
 queue_service = QueueService()
+
+def debug(message):
+    conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
+    conn.request("POST", "/", json.dumps(message), {'Content-Type': 'application/json'})
 
 @routes.route('/')
 def root():
@@ -21,13 +23,27 @@ def getAll():
     return queue_service.list_queues()
 
 @routes.route('/post')
-def post():
+def post_ok():
     return (queue_service.enqueue('OneQueueName', {"when": '{}'.format(datetime.now())}))
 
+@routes.route('/post_failed')
+def post_failed():
+    return (queue_service.enqueue('OneQueueName', {"failed": '{}'.format(datetime.now())}))
+
+
 @useFunctionToConsumeQueue('OneQueueName')
-def consumer(message):
-    sys.stdout.write("Controller, try to consume")
-    conn.request("POST", "/", json.dumps('<CONSUMER>'+message+'</CONSUMER>'), {'Content-Type': 'application/json'})
+def consumer(message) -> None:
+    sys.stdout.write("Controller::consumer, try to consume:")
+    debug(message)
+    if "failed" in message:
+        raise NotFound("The message failed")
+
+    sys.stdout.write("...consumed")
+
+@useFunctionToConsumeQueue('AnotherQueueName')
+def consumerForAnotherQueue(message):
+    sys.stdout.write("Controller::consumerForAnotherQueue, try to consume")
+    debug(message)
     sys.stdout.write("...consumed")
 
 @routes.route('/get_queues')    
@@ -38,11 +54,13 @@ def expose_queues():
 @routes.route('/consume_queues')
 def consume_queues():
     queues = get_queues()
+    words = list()
     for QueueName, callback in queues.items():
         queue_service.poll_once(QueueName, callback)
-        print("Consuming" + QueueName)
+        words.append(QueueName)
+        print("Route /consume_queues consuming " + QueueName)
 
-    return "yep!"
-    
+    return jsonify(words)
+
 
 

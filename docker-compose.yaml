@@ -23,7 +23,6 @@ services:
     environment:
     - ROLE_CONSUMER=true
 
-
   localstack:
     image: localstack/localstack
     ports:
@@ -39,5 +38,5 @@ services:
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+      - "/tmp/:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
