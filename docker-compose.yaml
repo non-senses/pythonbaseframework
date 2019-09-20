@@ -24,6 +24,9 @@ services:
     - mongodb
     environment:
     - ROLE_CONSUMER=true
+    entrypoint:
+    - python
+    - consumers.py
 
   localstack:
     image: localstack/localstack

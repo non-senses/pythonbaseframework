@@ -3,11 +3,9 @@ import json
 from config import config, isDev, roleIsConsumer
 from time import sleep
 from datetime import datetime
-import http.client
 import sys
-
-conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
-
+from app.modules.infrastructure.logger import loggerInstance as Logger
+ 
 instances = dict()
 
 class QueueService:
@@ -19,7 +17,6 @@ class QueueService:
             endpoint_url=config["aws"]["sqs"]["endpoint_url"],
             region_name='some-region'
         )
-
         self.resourceSqs = boto3.resource(
             'sqs',
             aws_access_key_id=config["aws"]["access_key"],
@@ -31,12 +28,16 @@ class QueueService:
     def list_queues(self):
         return self.awsClient.list_queues()
 
+    def list_queue_names(self):
+        return [x for x, _ in enumerate(instances)]
+
     def create_queue(self, QueueName):
         return "Creating a queue named {QueueName}".format(QueueName=QueueName)
 
     def ensure_queue_exists(self, QueueName):
         if isDev():
             self.awsClient.create_queue(QueueName=QueueName)
+            self.awsClient.create_queue(QueueName="{}-dlq".format(QueueName))
 
     def enqueue(self, QueueName, message):
         self.ensure_queue_exists(QueueName)
@@ -46,20 +47,16 @@ class QueueService:
             MessageBody=json.dumps(message)
         )
 
-
     def get_queue_url(self, QueueName):
         response = self.awsClient.get_queue_url(QueueName=QueueName);
         return response['QueueUrl']
 
     def poll_once(self, QueueName, callback):
-        print("About to poll...")
-        sys.stdout.write("About to poll...  STD OUT\n")
+        Logger.info("About to poll {}...".format(QueueName))
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
         messages = queue.receive_messages(WaitTimeSeconds=2)
-        print("Polled messages")
-        sys.stdout.write("Polled...  STD OUT\n")
+        Logger.info("Polled {} messages from {}...".format(len(messages), QueueName))
         for index, message in enumerate(messages):
-            print("received ", index, message)
             try:
                 # Start tracking time ...
                 self.try_to_consume_message(message, callback)
@@ -74,14 +71,16 @@ class QueueService:
 
     def flag_message_success(self, message):
         message.delete()
-        print("REMOVING MESSAGE")
+        Logger.info("Removed message")
         return True
 
     def flag_message_failure(self, message, exception):
-        sys.stdout.write("flag_message_failure")
-        print("Failure processing the message. For SQS do Nothing. Maybe send metrics?")
-        print(repr(exception))
+        Logger.error("Errored message: {0}: {1}".format(message, repr(exception)))
         return True
+
+    def get_queue_information_by_name(self, queue_name: str):
+        return self.resourceSqs.get_queue_by_name(QueueName=queue_name).attributes
+
 
 def useFunctionToConsumeQueue(QueueName):
     queue_service = QueueService()
@@ -94,4 +93,11 @@ def get_queue_names():
     return json.dumps(list(instances.keys()))
 
 def get_queues():
-    return instances    
+    return instances
+
+def consume_once():
+    queue_service = QueueService()
+    queues = get_queues()
+    for QueueName, callback in queues.items():
+        queue_service.poll_once(QueueName, callback)
+

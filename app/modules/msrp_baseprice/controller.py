@@ -14,19 +14,34 @@ queue_service = QueueService()
 def root():
     return MsrpDocument.objects.to_json()
 
+@routes.route('/clear')
+def clear():
+    MsrpDocument.objects.delete()
+    return root()
+
+@routes.route('/receive_product')
+def receive_product():
+    return "save"
+
 
 @routes.route('/post')
 def post():
     data = dict({
+        "productCode":"some-product2",
         "countryCode": "US",
         "currencyCode": "USD",
         "includesTaxes": False,
-        "amount": 123
+        "amount": 121
     })
 
     # return data
-    doc = MsrpDocument(**data)
-    doc.save()
+    doc = MsrpDocument.findByUnique(**data)
 
-    return "save"
+    for field, value in data.items():
+        doc[field] = value
+
+    doc.save()
+    return doc.to_json()
+
+
 

@@ -10,13 +10,9 @@ routes = Blueprint('sqspoc', __name__)
 
 queue_service = QueueService()
 
-def debug(message):
-    conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
-    conn.request("POST", "/", json.dumps(message), {'Content-Type': 'application/json'})
-
 @routes.route('/')
 def root():
-    return "ROOT was called in the SqsPocController"
+    return get_queue_names()
 
 @routes.route('/list')
 def getAll():
@@ -32,23 +28,30 @@ def post_failed():
 
 @useFunctionToConsumeQueue('OneQueueName')
 def consumer(message) -> None:
-    sys.stdout.write("Controller::consumer, try to consume:")
-    debug(message)
+    operation = dict({
+        'originalMessage': message,
+        'status': True
+    })
+    conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
+   
     if "failed" in message:
+        operation['status'] = False
+        conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json'})
         raise NotFound("The message failed")
+    conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json', 'Connection': 'close'})
 
-    sys.stdout.write("...consumed")
 
 @useFunctionToConsumeQueue('AnotherQueueName')
 def consumerForAnotherQueue(message):
     sys.stdout.write("Controller::consumerForAnotherQueue, try to consume")
-    debug(message)
-    sys.stdout.write("...consumed")
 
-@routes.route('/get_queues')    
-def expose_queues():
-    print("doing something")
-    return get_queue_names()
+@routes.route('/<queue_name>')
+def expose_queue_values(queue_name):
+    if queue_name not in get_queue_names():
+        raise NotFound('The requested queue, {}, does not exist.'.format(queue_name))
+
+    return queue_service.get_queue_information_by_name(queue_name)
+
 
 @routes.route('/consume_queues')
 def consume_queues():
