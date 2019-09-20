@@ -1,10 +1,12 @@
 from flask import request, Flask, Blueprint, jsonify
 from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue, get_queue_names, get_queues
 from datetime import datetime
+from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue
 from .models import MsrpDocument
 import sys
 import json
 import http.client
+import random
 
 routes = Blueprint('msrp-baseprice', __name__)
 
@@ -19,10 +21,40 @@ def clear():
     MsrpDocument.objects.delete()
     return root()
 
-@routes.route('/receive_product')
-def receive_product():
-    return "save"
+@routes.route('/pretend_a_product_was_updated/<product_code>')
+def receive_product(product_code):
+    product = dict({
+        "product_code": "product_code_{}".format(product_code),
+        "msrps": {
+            "US": {
+                "USD": {
+                    "taxes_included": True,
+                    "amount": random.randrange(50, 60)
+                }
+            },
+            "CA": {
+                "CAD": {
+                    "taxes_included": False,
+                    "amount": random.randrange(60, 70)
+                },
+                "USD": {
+                    "taxes_included": False,
+                    "amount": random.randrange(40, 50)
+                },                
+            },            
+        }
+    })
+    return queue_service.enqueue('the-pim-queue', product)
 
+@useFunctionToConsumeQueue('the-pim-queue')
+def consume_a_message_from_products_queue(message):
+    conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
+    operation = dict({
+        'originalMessage': message
+    })
+
+    conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json'})
+    return "e"
 
 @routes.route('/post')
 def post():
