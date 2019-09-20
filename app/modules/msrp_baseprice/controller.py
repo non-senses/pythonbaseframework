@@ -76,8 +76,7 @@ def test_receive_product(product_code):
 def consume_a_message_from_products_queue(message):
     data = msrpService.extract_msrps_from_product_payload(message)
     print(data)
-    conn = http.client.HTTPSConnection('enxheluifkkri.x.pipedream.net')
-    conn.request("POST", "/", json.dumps(data), {'Content-Type': 'application/json'})
+    
     return "e"
 
 @routes.route('/post')

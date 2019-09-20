@@ -56,6 +56,7 @@ class QueueService:
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
         messages = queue.receive_messages(WaitTimeSeconds=2)
         Logger.info("Polled {} messages from {}...".format(len(messages), QueueName))
+        print(messages);
         for index, message in enumerate(messages):
             try:
                 # Start tracking time ...
@@ -66,8 +67,11 @@ class QueueService:
                 # report exeuction time failed
                 self.flag_message_failure(message, exception)
 
+
     def try_to_consume_message(self, message, callback):
-        callback(message.body)
+        body = message.body
+        print("Calling callback on {}".format(body))
+        callback(body)
 
     def flag_message_success(self, message):
         message.delete()

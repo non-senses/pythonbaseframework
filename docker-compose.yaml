@@ -24,6 +24,7 @@ services:
     - mongodb
     environment:
     - ROLE_CONSUMER=true
+    - PYTHONUNBUFFERED=true
     entrypoint:
     - python
     - consumers.py

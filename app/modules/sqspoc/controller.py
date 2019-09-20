@@ -47,8 +47,6 @@ def consumerForAnotherQueue(message):
     sys.stdout.write("Controller::consumerForAnotherQueue, try to consume")
 
 
-
-
 @routes.route('/<queue_name>')
 def expose_queue_values(queue_name):
     if queue_name not in get_queue_names():
