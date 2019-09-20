@@ -26,7 +26,7 @@ def post_ok():
 def post_failed():
     return (queue_service.enqueue('OneQueueName', {"failed": '{}'.format(datetime.now())}))
 
-@useFunctionToConsumeQueue('OneQueueName')
+# @useFunctionToConsumeQueue('OneQueueName')
 def consumer(message) -> None:
     operation = dict({
         'originalMessage': message,
@@ -42,9 +42,12 @@ def consumer(message) -> None:
     conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json', 'Connection': 'close'})
 
 
-@useFunctionToConsumeQueue('AnotherQueueName')
+# @useFunctionToConsumeQueue('AnotherQueueName')
 def consumerForAnotherQueue(message):
     sys.stdout.write("Controller::consumerForAnotherQueue, try to consume")
+
+
+
 
 @routes.route('/<queue_name>')
 def expose_queue_values(queue_name):

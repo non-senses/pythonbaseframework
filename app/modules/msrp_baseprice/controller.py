@@ -47,6 +47,31 @@ def receive_product(product_code):
     })
     return queue_service.enqueue('the-pim-queue', product)
 
+@routes.route('/test_single/<product_code>')
+def test_receive_product(product_code):
+    product = dict({
+        "product_code": "product_code_{}".format(product_code),
+        "msrps": {
+            "US": {
+                "USD": {
+                    "taxes_included": True,
+                    "amount": random.randrange(50, 60)
+                }
+            },
+            "CA": {
+                "CAD": {
+                    "taxes_included": False,
+                    "amount": random.randrange(60, 70)
+                },
+                "USD": {
+                    "taxes_included": False,
+                    "amount": random.randrange(40, 50)
+                },                
+            },            
+        }
+    })
+    return json.dumps(msrpService.extract_msrps_from_product_payload(product))
+
 @useFunctionToConsumeQueue('the-pim-queue')
 def consume_a_message_from_products_queue(message):
     data = msrpService.extract_msrps_from_product_payload(message)

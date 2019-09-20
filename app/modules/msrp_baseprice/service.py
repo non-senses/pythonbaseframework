@@ -4,8 +4,8 @@ def extract_msrps_from_product_payload(product_payload):
     product_code = product_payload['product_code']
     msrps = []
 
-    for country, country_data in enumerate(product_payload['msrps']):
-        for currency, msrp in enumerate(country_data):
+    for country, country_data in product_payload['msrps'].items():
+        for currency, msrp in country_data.items():
             msrps.append(dict({
                 'productCode': product_code,
                 'countryCode': country,
