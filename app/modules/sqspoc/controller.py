@@ -37,7 +37,8 @@ def consumer(message) -> None:
     if "failed" in message:
         operation['status'] = False
         conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json'})
-        raise NotFound("The message failed")
+        # raise NotFound("The message failed")
+        
     conn.request("POST", "/", json.dumps(operation), {'Content-Type': 'application/json', 'Connection': 'close'})
 
 
