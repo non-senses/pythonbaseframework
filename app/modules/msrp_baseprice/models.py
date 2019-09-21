@@ -1,7 +1,10 @@
 import mongoengine
 import sys
 import datetime
+import json
+from . import helper
 
+unique_fields = ['productCode','currencyCode','countryCode']
 class MsrpDocument(mongoengine.Document):
     ## List of valid fields https://github.com/MongoEngine/mongoengine/blob/master/mongoengine/fields.py#L61
     productCode = mongoengine.StringField(required=True)
@@ -17,7 +20,7 @@ class MsrpDocument(mongoengine.Document):
             'currencyCode',
             'countryCode',
             {
-                'fields': ['productCode','currencyCode','countryCode'],
+                'fields': unique_fields,
                 'unique': True
             }
         ]
@@ -29,14 +32,56 @@ class MsrpDocument(mongoengine.Document):
 
     def findByUnique(**payload):
         query = dict()
-        query['productCode'] = payload['productCode']
-        query['countryCode'] = payload['countryCode']
-        query['currencyCode'] = payload['currencyCode']
+        for f in MsrpDocument.getUniqueFields():
+            query[f] = payload[f]
+
         existing = MsrpDocument.objects(**query).first()
 
         if None == existing:
             return MsrpDocument()
 
         return existing
-        
+
+    def to_dict(self):
+        return helper.mongo_to_dict(self,[])
+
+    def getUniqueFields():
+        return unique_fields
+
+
+
+class BasePriceCandidateDocument(mongoengine.DynamicDocument):
+    ## List of valid fields https://github.com/MongoEngine/mongoengine/blob/master/mongoengine/fields.py#L61
+    
+    meta = {
+        'indexes': [
+            'productCode',
+            'currencyCode',
+            'countryCode',
+            {
+                'fields': unique_fields,
+                'unique': True
+            }
+        ]
+    }
+
+    def findByUnique(**payload):
+        query = dict()
+        for f in BasePriceCandidateDocument.getUniqueFields():
+            query[f] = payload[f]
+
+        existing = BasePriceCandidateDocument.objects(**query).first()
+
+        if None == existing:
+            return BasePriceCandidateDocument()
+
+        return existing
+
+    def getUniqueFields():
+        return unique_fields
+
+    def to_dict(self):
+        return helper.mongo_to_dict(self,[])
+
+
 

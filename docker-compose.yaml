@@ -1,7 +1,7 @@
 version: "3.4"
 
 services:
-  pythonpoc-http:
+  http:
     image: pythonpoc
     build:
       context: .
@@ -10,10 +10,11 @@ services:
     depends_on:
     - localstack
     - mongodb
+    - graphite
     ports:
     - 5000:5000
 
-  pythonpoc-consumers:
+  consumers:
     image: pythonpoc
     build:
       context: .
@@ -22,6 +23,7 @@ services:
     depends_on:
     - localstack
     - mongodb
+    - graphite
     environment:
     - ROLE_CONSUMER=true
     - PYTHONUNBUFFERED=true
@@ -51,3 +53,20 @@ services:
     image: mongo
     volumes:
       - ./volumes/mongodb:/data/
+
+  mongoadmin:
+    image: 0x59/admin-mongo:latest
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - CONN_NAME=mongo
+      - DB_HOST=mongodb
+
+  graphite:
+    image: hopsoft/graphite-statsd
+    ports:
+    - 5080:80
+    - 5081:81
+    - 5002:8125
+ 

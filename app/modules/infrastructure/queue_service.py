@@ -5,7 +5,8 @@ from time import sleep
 from datetime import datetime
 import sys
 from app.modules.infrastructure.logger import loggerInstance as Logger
- 
+import traceback
+
 instances = dict()
 
 class QueueService:
@@ -36,8 +37,9 @@ class QueueService:
 
     def ensure_queue_exists(self, QueueName):
         if isDev():
-            self.awsClient.create_queue(QueueName=QueueName)
             self.awsClient.create_queue(QueueName="{}-dlq".format(QueueName))
+            self.awsClient.create_queue(QueueName=QueueName)
+            
 
     def enqueue(self, QueueName, message):
         self.ensure_queue_exists(QueueName)
@@ -56,7 +58,7 @@ class QueueService:
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
         messages = queue.receive_messages(WaitTimeSeconds=2)
         Logger.info("Polled {} messages from {}...".format(len(messages), QueueName))
-        print(messages);
+        print(messages)
         for index, message in enumerate(messages):
             try:
                 # Start tracking time ...
@@ -65,13 +67,15 @@ class QueueService:
                 # report execution time success
             except Exception as exception:
                 # report exeuction time failed
+                traceback.print_exc()
                 self.flag_message_failure(message, exception)
 
 
     def try_to_consume_message(self, message, callback):
         body = message.body
-        print("Calling callback on {}".format(body))
-        callback(body)
+        payload = json.loads(body)
+        print("Calling callback on {}".format(payload))
+        callback(payload)
 
     def flag_message_success(self, message):
         message.delete()

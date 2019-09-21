@@ -2,7 +2,7 @@ from flask import request, Flask, Blueprint, jsonify
 from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue, get_queue_names, get_queues
 from datetime import datetime
 from app.modules.infrastructure.queue_service import QueueService, useFunctionToConsumeQueue
-from .models import MsrpDocument
+from .models import MsrpDocument, BasePriceCandidateDocument
 import sys
 import json
 import http.client
@@ -13,8 +13,14 @@ routes = Blueprint('msrp-baseprice', __name__)
 
 queue_service = QueueService()
 
-@routes.route('/')
-def root():
+@routes.route('/base-price-candidates')
+def bpc_root():
+    return BasePriceCandidateDocument.objects.to_json()
+
+
+
+@routes.route('/msrps')
+def msrp_root():
     return MsrpDocument.objects.to_json()
 
 @routes.route('/clear')
@@ -22,10 +28,13 @@ def clear():
     MsrpDocument.objects.delete()
     return root()
 
-@routes.route('/pretend_a_product_was_updated/<product_code>')
-def receive_product(product_code):
+@routes.route('/pretend_a_product_was_updated', methods=['POST'])
+def receive_product():
+    payload = request.get_json()
+    return queue_service.enqueue('the-pim-queue', payload)
+    
     product = dict({
-        "product_code": "product_code_{}".format(product_code),
+        "product_code": "product_code_{}".format('2'),
         "msrps": {
             "US": {
                 "USD": {
@@ -45,7 +54,7 @@ def receive_product(product_code):
             },            
         }
     })
-    return queue_service.enqueue('the-pim-queue', product)
+    return queue_service.enqueue('the-pim-queue', payload)
 
 @routes.route('/test_single/<product_code>')
 def test_receive_product(product_code):
@@ -74,10 +83,28 @@ def test_receive_product(product_code):
 
 @useFunctionToConsumeQueue('the-pim-queue')
 def consume_a_message_from_products_queue(message):
-    data = msrpService.extract_msrps_from_product_payload(message)
-    print(data)
+    msrps = msrpService.extract_msrps_from_product_payload(message)
+    responses = []
+    for single_msrp in msrps:
+        print(single_msrp)
+        doc = msrpService.import_msrp_if_newer(single_msrp)
+        queue_service.enqueue('base-price-candidate-generator', doc)
+        responses.append(doc)
+
+    print(responses)
+
+
+
+@useFunctionToConsumeQueue('base-price-candidate-generator')
+def build_candidate_from_msrp(payload):
+    msrp_with_process_data = msrpService.enrich_process_data(payload)
+    print("a data-complete price looks like this: {}".format(msrp_with_process_data))
+
+    msrp_with_result_data = msrpService.compute_result(msrp_with_process_data)
+    print("a computed price price looks like this: {}".format(msrp_with_result_data))
     
-    return "e"
+    return msrpService.persist_base_price_candidate(msrp_with_result_data)
+
 
 @routes.route('/post')
 def post():
