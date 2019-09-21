@@ -13,11 +13,10 @@ routes = Blueprint('msrp-baseprice', __name__)
 
 queue_service = QueueService()
 
+
 @routes.route('/base-price-candidates')
 def bpc_root():
     return BasePriceCandidateDocument.objects.to_json()
-
-
 
 @routes.route('/msrps')
 def msrp_root():
@@ -33,28 +32,6 @@ def receive_product():
     payload = request.get_json()
     return queue_service.enqueue('the-pim-queue', payload)
     
-    product = dict({
-        "product_code": "product_code_{}".format('2'),
-        "msrps": {
-            "US": {
-                "USD": {
-                    "taxes_included": True,
-                    "amount": random.randrange(50, 60)
-                }
-            },
-            "CA": {
-                "CAD": {
-                    "taxes_included": False,
-                    "amount": random.randrange(60, 70)
-                },
-                "USD": {
-                    "taxes_included": False,
-                    "amount": random.randrange(40, 50)
-                },                
-            },            
-        }
-    })
-    return queue_service.enqueue('the-pim-queue', payload)
 
 @routes.route('/test_single/<product_code>')
 def test_receive_product(product_code):
@@ -126,4 +103,39 @@ def post():
     return doc.to_json()
 
 
+@routes.route('/mock-pim-payload')
+def mock_pim_payload():
+    countries = random.sample(['CA','US','FR','AR','JP'], int(2+random.randrange(0,3)))
+    currencies = random.sample(['CAD','USD','EUR','RIN','AR$'], int(3+random.randrange(0,2)))
+    howManyCurrencies = 1
 
+    mocked_msrp = {
+        "product_code": oct(random.randint(0,5000)),
+        "msrps": {}
+    }
+
+    for country in countries:
+        if random.random() < .05:
+            continue
+
+        mocked_msrp['msrps'][country] = {}
+        for currency in currencies:
+            if random.random() < .05:
+                continue
+
+            amount = random.randrange(100, 1900)
+            taxes_included = random.random() < .4
+
+            mocked_msrp['msrps'][country][currency] = {
+                "amount": amount,
+                "taxes_included": taxes_included
+            }
+        
+    return mocked_msrp
+
+
+
+@routes.route('/mock-pim-calls')
+def fake_multiple_products():
+    for i in range(250):
+        queue_service.enqueue('the-pim-queue', mock_pim_payload())

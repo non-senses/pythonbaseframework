@@ -6,6 +6,7 @@ from datetime import datetime
 import sys
 from app.modules.infrastructure.logger import loggerInstance as Logger
 import traceback
+from .metrics import client as stats
 
 instances = dict()
 
@@ -44,6 +45,7 @@ class QueueService:
     def enqueue(self, QueueName, message):
         self.ensure_queue_exists(QueueName)
         queue_url = self.get_queue_url(QueueName)
+        stats.incr("qs.{}.input".format(QueueName))
         return self.awsClient.send_message(
             QueueUrl=queue_url,
             MessageBody=json.dumps(message)
@@ -56,19 +58,21 @@ class QueueService:
     def poll_once(self, QueueName, callback):
         Logger.info("About to poll {}...".format(QueueName))
         queue = self.resourceSqs.get_queue_by_name(QueueName=QueueName)
-        messages = queue.receive_messages(WaitTimeSeconds=2)
+        messages = queue.receive_messages(WaitTimeSeconds=2,MaxNumberOfMessages=10,VisibilityTimeout=10)
         Logger.info("Polled {} messages from {}...".format(len(messages), QueueName))
         print(messages)
         for index, message in enumerate(messages):
+            timer = stats.timer("qs.{}.runtime".format(QueueName))
+            timer.start()
             try:
-                # Start tracking time ...
                 self.try_to_consume_message(message, callback)
                 self.flag_message_success(message)
-                # report execution time success
+                stats.incr("qs.{}.ok".format(QueueName))
             except Exception as exception:
-                # report exeuction time failed
+                stats.incr("qs.{}.ko".format(QueueName))
                 traceback.print_exc()
                 self.flag_message_failure(message, exception)
+            timer.stop()
 
 
     def try_to_consume_message(self, message, callback):
