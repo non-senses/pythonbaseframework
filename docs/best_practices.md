@@ -89,5 +89,27 @@ k A, v Letter A
 k B, v Letter B, upper case
 k b, v letter b, lower case
     ```
-* iteritems()
-* Function arguments: position vs numbered arguments
+* Function arguments: position vs named arguments
+    * Functions can receive arguments in two ways: position and named.
+    * Position arguments: as most programming languages:
+
+```
+def my_function(first_argument, second_argument, third_argument):
+    if first_argument == second_argument:
+        print ("First and second contain the same value: {}".format(second_argument))
+    
+    if third_argument == second_argument:
+        print ("Third and second contain the same value: {}".format(second_argument))
+
+>>> my_function("one","two","three")
+>>> my_function("one","two","two")
+Third and second contain the same value: two
+>>> my_function("one","one","three")
+First and second contain the same value: one
+>>> my_function("one","one","one")
+First and second contain the same value: one
+Third and second contain the same value: one
+```
+
+
+* Special `**kwargs`;

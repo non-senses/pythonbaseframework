@@ -133,9 +133,18 @@ def mock_pim_payload():
         
     return mocked_msrp
 
-
-
 @routes.route('/mock-pim-calls')
 def fake_multiple_products():
     for i in range(250):
         queue_service.enqueue('the-pim-queue', mock_pim_payload())
+
+
+@routes.route('/approve-candidate/<candidate_id>')
+def approve_a_candidate(candidate_id):
+    
+    return msrpService.approve_a_candidate(candidate_id)
+
+
+@routes.route('/reject-candidate/<candidate_id>')
+def reject_a_candidate(candidate_id):
+    return msrpService.reject_a_candidate(candidate_id)

@@ -52,7 +52,6 @@ class MsrpDocument(mongoengine.Document):
 
 class BasePriceCandidateDocument(mongoengine.DynamicDocument):
     ## List of valid fields https://github.com/MongoEngine/mongoengine/blob/master/mongoengine/fields.py#L61
-    
     meta = {
         'indexes': [
             'productCode',
@@ -83,5 +82,39 @@ class BasePriceCandidateDocument(mongoengine.DynamicDocument):
     def to_dict(self):
         return helper.mongo_to_dict(self,[])
 
+
+class ApprovedBasePriceDocument(mongoengine.DynamicDocument):
+    ## List of valid fields https://github.com/MongoEngine/mongoengine/blob/master/mongoengine/fields.py#L61
+    meta = {
+        'indexes': [
+            'productCode',
+            'currencyCode',
+            'countryCode',
+            {
+                'fields': unique_fields,
+                'unique': True
+            }
+        ]
+    }
+
+    def findByUnique(**payload):
+        query = dict()
+
+        for f in ApprovedBasePriceDocument.getUniqueFields():
+            print(f, payload)
+            query[f] = payload[f]
+
+        existing = ApprovedBasePriceDocument.objects(**query).first()
+
+        if None == existing:
+            return ApprovedBasePriceDocument()
+
+        return existing
+
+    def getUniqueFields():
+        return unique_fields
+
+    def to_dict(self):
+        return helper.mongo_to_dict(self,[])
 
 

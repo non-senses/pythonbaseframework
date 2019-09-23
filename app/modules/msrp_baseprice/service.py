@@ -1,7 +1,8 @@
-from .models import MsrpDocument, BasePriceCandidateDocument
+from .models import MsrpDocument, BasePriceCandidateDocument, ApprovedBasePriceDocument
 from functools import reduce
 import random
 import json
+import datetime
 
 def extract_msrps_from_product_payload(product_payload):
     product_code = product_payload['product_code']
@@ -169,3 +170,40 @@ def retrieve_tax_or_duty(msrp_data):
         'amount': cost,
         'currencyCode': msrp_data['currencyCode']
     })
+
+
+def approve_a_candidate(candidate_id):
+    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id)
+
+    if candidate is None:
+        raise Exception("Candidate not found")
+
+    candidate_as_dict = candidate.to_dict()
+
+    approved = ApprovedBasePriceDocument.objects(countryCode=candidate['countryCode'], currencyCode=candidate['currencyCode'], productCode=candidate['productCode']).first()
+    if approved is None:
+        approved = ApprovedBasePriceDocument()
+
+    for f in ['countryCode', 'currencyCode', 'productCode', 'process_data', 'process_results']:
+        approved[f] = candidate[f]
+    
+    approved['approved_at'] = datetime.datetime.utcnow()
+    approved.save()
+
+    candidate.modify(approved=True)
+    return approved.to_json()
+
+
+
+def reject_a_candidate(candidate_id):
+    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id)
+
+    if candidate is None:
+        raise Exception("Candidate not found")
+
+    candidate.modify(approved=False)
+    candidate.save()
+    return candidate.to_json()
+
+
+        
