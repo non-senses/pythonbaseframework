@@ -31,7 +31,7 @@ class QueueService:
         return self.awsClient.list_queues()
 
     def list_queue_names(self):
-        return [x for x, _ in enumerate(instances)]
+        return [y for _, y in enumerate(instances)]
 
     def create_queue(self, QueueName):
         return "Creating a queue named {QueueName}".format(QueueName=QueueName)
@@ -92,6 +92,18 @@ class QueueService:
 
     def get_queue_information_by_name(self, queue_name: str):
         return self.resourceSqs.get_queue_by_name(QueueName=queue_name).attributes
+
+    def empty_all_queues(self):
+        col = dict()
+        for QueueName in self.list_queue_names():
+            col[QueueName] = self.empty_single_queue(QueueName)
+        return col
+            
+    def empty_single_queue(self, queue_name):
+        return [
+            self.awsClient.purge_queue(QueueUrl=self.get_queue_url(queue_name)),
+            self.get_queue_information_by_name(queue_name),
+        ]
 
 
 def useFunctionToConsumeQueue(QueueName):

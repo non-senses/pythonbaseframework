@@ -65,3 +65,10 @@ def consume_queues():
         print("Route /consume_queues consuming " + QueueName)
 
     return jsonify(words)
+
+
+
+@routes.route('/empty_queues')
+def empty_queues():
+    queues = queue_service.empty_all_queues()
+    return json.dumps(queues)
