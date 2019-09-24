@@ -1,5 +1,6 @@
 from .models import MsrpDocument, BasePriceCandidateDocument, ApprovedBasePriceDocument
 from functools import reduce
+from app.modules.infrastructure import metrics
 import random
 import json
 import datetime
@@ -37,6 +38,9 @@ def persist_base_price_candidate(base_price_candidate):
     doc = BasePriceCandidateDocument.findByUnique(**base_price_candidate)
     for field, value in base_price_candidate.items():
         doc[field] = value
+
+    ## New candidates are not approved by default
+    doc['approved']=False
 
     doc.save()
 
@@ -173,7 +177,7 @@ def retrieve_tax_or_duty(msrp_data):
 
 
 def approve_a_candidate(candidate_id):
-    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id)
+    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id, approved=False)
 
     if candidate is None:
         raise Exception("Candidate not found")
@@ -191,18 +195,21 @@ def approve_a_candidate(candidate_id):
     approved.save()
 
     candidate.modify(approved=True)
+    metrics.increase_approved_price_counter()
     return approved.to_json()
 
 
 
 def reject_a_candidate(candidate_id):
-    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id)
+    
+    candidate = BasePriceCandidateDocument.objects.get(id=candidate_id, approved=True)
 
     if candidate is None:
         raise Exception("Candidate not found")
 
     candidate.modify(approved=False)
     candidate.save()
+    metrics.increase_rejected_price_counter()
     return candidate.to_json()
 
 

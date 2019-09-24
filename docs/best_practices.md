@@ -111,5 +111,22 @@ First and second contain the same value: one
 Third and second contain the same value: one
 ```
 
+```
+>>> def my_funcnamed_arguments_func(x,y,z):
+...     print(x,y,z)
+...
+>>> my_funcnamed_arguments_func(1,2,3)
+(1, 2, 3)
+>>> my_funcnamed_arguments_func(z=1,x=2,y=3)
+(2, 3, 1)
+```
 
 * Special `**kwargs`;
+```
+>>> def my_kargs_func(**kwargs):
+    print(kwargs.items())
+...
+>>> my_kargs_func(x='X',y='Y',z='Z')
+[('y', 'Y'), ('x', 'X'), ('z', 'Z')]
+```
+

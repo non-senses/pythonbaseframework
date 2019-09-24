@@ -13,7 +13,6 @@ routes = Blueprint('msrp-baseprice', __name__)
 
 queue_service = QueueService()
 
-
 @routes.route('/base-price-candidates')
 def bpc_root():
     return BasePriceCandidateDocument.objects.to_json()
@@ -71,7 +70,6 @@ def consume_a_message_from_products_queue(message):
     print(responses)
 
 
-
 @useFunctionToConsumeQueue('base-price-candidate-generator')
 def build_candidate_from_msrp(payload):
     msrp_with_process_data = msrpService.enrich_process_data(payload)
@@ -101,7 +99,6 @@ def post():
 
     doc.save()
     return doc.to_json()
-
 
 @routes.route('/mock-pim-payload')
 def mock_pim_payload():
@@ -135,15 +132,13 @@ def mock_pim_payload():
 
 @routes.route('/mock-pim-calls')
 def fake_multiple_products():
-    for i in range(250):
+    for i in range(10):
         queue_service.enqueue('the-pim-queue', mock_pim_payload())
 
 
 @routes.route('/approve-candidate/<candidate_id>')
 def approve_a_candidate(candidate_id):
-    
     return msrpService.approve_a_candidate(candidate_id)
-
 
 @routes.route('/reject-candidate/<candidate_id>')
 def reject_a_candidate(candidate_id):
