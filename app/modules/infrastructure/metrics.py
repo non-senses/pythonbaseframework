@@ -7,6 +7,5 @@ def increase_approved_price_counter():
 def increase_rejected_price_counter():
     client.incr("msrp.candidate.rejected")
 
-
 def increase_received_price_counter():
     client.incr("msrp.candidate.received")

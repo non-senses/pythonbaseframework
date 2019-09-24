@@ -9,6 +9,7 @@ import http.client
 import random
 from . import service as msrpService
 
+
 routes = Blueprint('msrp-baseprice', __name__)
 
 queue_service = QueueService()
@@ -72,6 +73,10 @@ def consume_a_message_from_products_queue(message):
 
 @useFunctionToConsumeQueue('base-price-candidate-generator')
 def build_candidate_from_msrp(payload):
+
+    if random.random() < 0.3:
+        raise Exception("something went wrong")
+    
     msrp_with_process_data = msrpService.enrich_process_data(payload)
     print("a data-complete price looks like this: {}".format(msrp_with_process_data))
 
@@ -132,7 +137,7 @@ def mock_pim_payload():
 
 @routes.route('/mock-pim-calls')
 def fake_multiple_products():
-    for i in range(10):
+    for i in range(250):
         queue_service.enqueue('the-pim-queue', mock_pim_payload())
 
 

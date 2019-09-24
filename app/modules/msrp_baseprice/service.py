@@ -41,7 +41,7 @@ def persist_base_price_candidate(base_price_candidate):
 
     ## New candidates are not approved by default
     doc['approved']=False
-
+    metrics.increase_received_price_counter()
     doc.save()
 
 
@@ -117,6 +117,10 @@ def build_base_price(msrp_data):
     }
 
 def get_enriched_costs(msrp_data):
+
+    
+
+
     return [
         retrieve_cost(msrp_data),
         {

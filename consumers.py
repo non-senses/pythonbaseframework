@@ -7,4 +7,6 @@ print("Consumers start")
 while True:
     for _ in range(10):
         consume_once()
+
+
     sleep(1)
